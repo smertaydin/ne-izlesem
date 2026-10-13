@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ne İzlesem">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#121114">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-180.png">
+<title>Ne İzlesem</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one narrow column — marquee header, sticky search, list → full detail view. Cinema-lobby palette: warm black, marquee amber. */
+:root {
+  --bg: #f3f2f6;
+  --surface: #ffffff;
+  --sunk: #e9e7ee;
+  --fg: #19171c;
+  --muted: #625d68;
+  --line: #dedbe4;
+  --accent: #a86a05;
+  --accent-ink: #ffffff;
+  --imdb: #f5c518;
+  --imdb-ink: #111;
+  --fresh: #d92b06;
+  --rotten: #2c8a3e;
+  --none: #8d8794;
+  --shadow: 0 1px 2px rgba(25, 20, 30, .06), 0 6px 20px rgba(25, 20, 30, .06);
+  --display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --body: "Figtree", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121114; --surface: #1c1a1f; --sunk: #242128; --fg: #ede8e3; --muted: #a29b97; --line: #2f2b33;
+    --accent: #f2b33d; --accent-ink: #1a1306; --fresh: #ff5a36; --rotten: #4cc764; --none: #7d7782;
+    --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121114; --surface: #1c1a1f; --sunk: #242128; --fg: #ede8e3; --muted: #a29b97; --line: #2f2b33;
+  --accent: #f2b33d; --accent-ink: #1a1306; --fresh: #ff5a36; --rotten: #4cc764; --none: #7d7782;
+  --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.5 var(--body); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 640px; margin: 0 auto; padding-inline: 16px; padding-block: 12px 48px; }
+button, input { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+/* Header */
+.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 8px 4px; }
+.brand h1 { margin: 0; font: 800 2.4rem/1 var(--display); letter-spacing: .01em; text-transform: uppercase; }
+.brand h1 span { color: var(--accent); }
+.brand small { font: 500 .7rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+.searchbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px; display: grid; gap: 10px; }
+.field { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 0 12px; box-shadow: var(--shadow); }
+.field:focus-within { border-color: var(--accent); }
+.field svg { flex: none; color: var(--muted); }
+.field input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 13px 0; font-size: 1.05rem; outline: none; }
+.field button { border: 0; background: none; color: var(--muted); padding: 6px; cursor: pointer; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 13px; font-size: .88rem; font-weight: 600; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+
+.label { font: 500 .72rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 22px 0 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.label button { font: inherit; letter-spacing: inherit; background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; padding: 0; }
+
+/* Results */
+.list { display: grid; gap: 8px; }
+.row { display: grid; grid-template-columns: 54px 1fr auto; gap: 12px; align-items: center; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px; cursor: pointer; }
+.row:hover { border-color: var(--accent); }
+.poster { width: 54px; aspect-ratio: 2/3; max-width: 100%; border-radius: 6px; background: var(--sunk) center/cover no-repeat; display: block; }
+.ph { display: grid; place-items: center; font: 800 1.2rem var(--display); color: var(--muted); }
+.row .t { min-width: 0; }
+.row .t b { display: block; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.row .t span { display: block; font-size: .84rem; color: var(--muted); overflow-wrap: anywhere; }
+.mini { display: grid; gap: 4px; justify-items: end; font-variant-numeric: tabular-nums; }
+.badge { display: inline-flex; align-items: center; gap: 4px; font: 700 .8rem/1 var(--body); padding: 4px 6px; border-radius: 6px; white-space: nowrap; }
+.b-imdb { background: var(--imdb); color: var(--imdb-ink); }
+.b-rt { border: 1.5px solid currentColor; }
+.fresh { color: var(--fresh); }
+.rotten { color: var(--rotten); }
+.nos { color: var(--none); }
+
+.quick { display: flex; flex-wrap: wrap; gap: 8px; }
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 18px; color: var(--muted); }
+.note { color: var(--muted); font-size: .9rem; }
+.err { background: var(--surface); border: 1.5px solid var(--fresh); border-radius: 12px; padding: 14px 16px; }
+.err b { display: block; margin-bottom: 4px; }
+.err code { display: block; margin-top: 8px; font: 500 .7rem/1.4 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+
+.skel { height: 72px; border-radius: 12px; background: linear-gradient(90deg, var(--sunk), var(--surface), var(--sunk)); background-size: 200% 100%; animation: sh 1.2s linear infinite; }
+@keyframes sh { to { background-position: -200% 0; } }
+
+/* Detail */
+.back { display: inline-flex; align-items: center; gap: 6px; border: 0; background: none; font-weight: 600; color: var(--muted); padding: 10px 0; cursor: pointer; }
+.hero { position: relative; display: grid; grid-template-columns: 112px 1fr; gap: 16px; align-items: end; padding: 16px; border-radius: 18px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); }
+.hero .blur { position: absolute; inset: -30px; background-size: cover; background-position: center; filter: blur(28px) saturate(1.2); opacity: .35; }
+.hero > *:not(.blur) { position: relative; }
+.hero .poster { width: 112px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.3); }
+.hero .meta { min-width: 0; }
+.hero h2 { margin: 0; font: 800 2rem/1.02 var(--display); text-transform: uppercase; text-wrap: balance; overflow-wrap: anywhere; }
+.hero .orig { color: var(--muted); font-size: .9rem; margin-top: 4px; overflow-wrap: anywhere; }
+.facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.fact { font: 500 .72rem/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 5px 7px; }
+
+.actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 12px; font-weight: 600; font-size: .9rem; cursor: pointer; text-decoration: none; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+.scores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.score { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px; display: grid; gap: 4px; align-content: start; min-width: 0; text-decoration: none; }
+.score .src { font: 500 .66rem/1.2 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.score .num { font: 800 2.2rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.score .num small { font-size: .9rem; color: var(--muted); font-weight: 600; }
+.score .sub { font-size: .76rem; color: var(--muted); line-height: 1.3; overflow-wrap: anywhere; }
+.score.imdb .num { color: var(--fg); }
+.score.imdb .num::before { content: ""; display: inline-block; width: .5em; height: .5em; background: var(--imdb); border-radius: 2px; margin-right: 6px; vertical-align: .18em; }
+.cf { display: inline-block; margin-top: 2px; font: 700 .66rem/1 var(--body); color: var(--fresh); border: 1px solid currentColor; border-radius: 4px; padding: 3px 4px; justify-self: start; }
+
+.section h3 { font: 500 .72rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 26px 0 10px; }
+.summary { font-size: 1.02rem; line-height: 1.6; max-width: 65ch; margin: 0; }
+.summary-src { font-size: .78rem; color: var(--muted); margin-top: 6px; }
+
+.prov { display: grid; gap: 12px; }
+.prov-group { display: grid; gap: 6px; }
+.prov-group > span { font-weight: 700; font-size: .86rem; }
+.prov-items { display: flex; flex-wrap: wrap; gap: 8px; }
+.prov-item { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px 6px 6px; text-decoration: none; max-width: 100%; }
+.prov-item .pi { width: 34px; height: 34px; border-radius: 8px; flex: none; background: var(--sunk) center/cover no-repeat; }
+.prov-item b { font-weight: 600; font-size: .92rem; }
+.prov-item i { font-style: normal; color: var(--muted); font-size: .82rem; font-variant-numeric: tabular-nums; }
+
+.people { display: flex; flex-wrap: wrap; gap: 6px; }
+.person { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: .88rem; }
+.person span { color: var(--muted); }
+
+.similar { display: grid; gap: 6px; }
+.sim { text-align: left; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+.sim b { font-weight: 700; }
+.sim span { display: block; font-size: .84rem; color: var(--muted); }
+
+.foot { margin-top: 34px; font-size: .76rem; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+@media (max-width: 380px) { .hero { grid-template-columns: 88px 1fr; } .hero .poster { width: 88px; } .score .num { font-size: 1.8rem; } }
+</style>
+<style>html{color-scheme:light dark}body{margin:0}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="brand">
+    <h1>Ne <span>İzlesem</span></h1>
+    <small>Türkiye · TR</small>
+  </header>
+
+  <div class="searchbar" id="searchbar">
+    <form class="field" id="form" role="search" autocomplete="off">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Film veya dizi adı yaz…" aria-label="Film veya dizi ara" enterkeyhint="search">
+      <button type="button" id="clear" aria-label="Temizle" hidden>✕</button>
+    </form>
+    <div class="chips" role="group" aria-label="Tür">
+      <button class="chip" data-f="all" aria-pressed="true">Tümü</button>
+      <button class="chip" data-f="film" aria-pressed="false">Film</button>
+      <button class="chip" data-f="dizi" aria-pressed="false">Dizi</button>
+    </div>
+  </div>
+
+  <main id="view"></main>
+
+  <p class="foot">Kişisel kullanım içindir. Puanlar canlı olarak IMDb ve Rotten Tomatoes'tan, Türkiye platformları JustWatch'tan alınır. Platform bilgisi gün içinde değişebilir.</p>
+</div>
+
+<script>
+(() => {
+  const $ = (s, el = document) => el.querySelector(s);
+  const view = $("#view");
+  const qEl = $("#q");
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* storage unavailable */ } },
+  };
+
+  let filter = "all";
+  let lastResults = null;
+  let lastQuery = "";
+  let current = null; // detail currently open
+  const cache = new Map();
+
+  // ---------- data access (direct, with the personal invite key from the link) ----------
+  const KEY = (() => {
+    let k = null;
+    try { k = new URLSearchParams(location.search).get("k"); } catch { /* */ }
+    if (k && /^[A-Za-z0-9_-]{16,64}$/.test(k)) { try { localStorage.setItem("ni.k", k); } catch { /* */ } return k; }
+    try { return localStorage.getItem("ni.k"); } catch { return null; }
+  })();
+  const FN = "https://orzooypcvqtcmmbxoloc.supabase.co/functions/v1/film-rehberi?k=" + encodeURIComponent(KEY || "");
+
+  async function api(params, useCache = true) {
+    const key = new URLSearchParams(params).toString();
+    if (useCache && cache.has(key)) return cache.get(key);
+    let r;
+    try { r = await fetch(FN + "&" + key); } catch (err) { throw { code: "network", message: String(err?.message || err) }; }
+    if (r.status === 401) throw { code: "bad_key" };
+    let data;
+    try { data = await r.json(); } catch { throw { code: "bad_data", message: "HTTP " + r.status }; }
+    if (!data) throw { code: "upstream" };
+    if (data.error) throw { code: "upstream", message: data.error };
+    if (useCache) cache.set(key, data);
+    return data;
+  }
+
+  function errorBox(e, retry) {
+    const code = e?.code;
+    const msgs = {
+      network: ["İnternete ulaşılamadı", "Bağlantını kontrol edip tekrar dene."],
+      bad_key: ["Davet linkin geçersiz", "Bu link iptal edilmiş ya da eksik. Uygulamayı paylaşan kişiden yeni bir link iste."],
+      not_granted: ["İzin verilmedi", "Arama yapmak için Supabase bağlantısına izin vermen gerekiyor. Sayfayı yeniden açınca tekrar sorulur."],
+      consent_required: ["İzin gerekiyor", "Supabase bağlantısına izin verip tekrar dene."],
+      server_not_connected: ["Supabase bağlı değil", "Claude ayarlarındaki Bağlayıcılar bölümünden Supabase'i bağla, sonra tekrar dene."],
+      needs_reauth: ["Supabase oturumu sona erdi", "Claude ayarlarından Supabase bağlantısını yenile, sonra tekrar dene."],
+      rate_limited: ["Çok hızlı arama", "Birkaç saniye bekleyip tekrar dene."],
+      upstream: ["Veri kaynağı yanıt vermedi", "Kaynak sitelerden biri şu an yanıt vermiyor. Biraz sonra tekrar dene."],
+    };
+    const [t, d] = msgs[code] || ["Bir şeyler ters gitti", "Bağlantını kontrol edip tekrar dene."];
+    const box = document.createElement("div");
+    box.className = "err";
+    const detail = [code, e?.message].filter(Boolean).join(": ").slice(0, 160);
+    box.innerHTML = `<b>${esc(t)}</b><span class="note">${esc(d)}</span>${detail ? `<code>${esc(detail)}</code>` : ""}`;
+    if (retry) {
+      const b = document.createElement("button");
+      b.className = "btn"; b.style.marginTop = "10px"; b.textContent = "Tekrar dene";
+      b.onclick = retry;
+      box.append(document.createElement("br"), b);
+    }
+    return box;
+  }
+
+  // ---------- images (straight from JustWatch) ----------
+  function loadImages(root = document) {
+    root.querySelectorAll("[data-p]").forEach((el) => {
+      const p = el.dataset.p;
+      if (!/^\/(poster|icon)\/\d+\/\{profile\}\/[\w.-]+\.\{format\}$/.test(p)) return;
+      const icon = p.startsWith("/icon/");
+      const url = "https://images.justwatch.com" + p.replace("{profile}", icon ? "s100" : "s332").replace("{format}", icon ? "png" : "webp");
+      el.style.backgroundImage = `url("${url}")`;
+    });
+  }
+
+  // ---------- helpers ----------
+  const tomatoClass = (v) => (v == null ? "nos" : v >= 60 ? "fresh" : "rotten");
+  const posterImg = (path, alt, cls = "poster") => path
+    ? `<span class="${cls}" role="img" aria-label="${esc(alt)} afişi" data-p="${esc(path)}"></span>`
+    : `<span class="${cls} ph" aria-hidden="true">?</span>`;
+  const fmtVotes = (n) => n == null ? "" : n >= 1e6 ? (n / 1e6).toLocaleString("tr-TR", { maximumFractionDigits: 1 }) + " Mn oy" : n >= 1e3 ? Math.round(n / 1e3).toLocaleString("tr-TR") + " B oy" : n + " oy";
+  const fmtImdb = (v) => v == null ? "—" : Number(v).toLocaleString("tr-TR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const looksTurkish = (s) => /[çğıöşüÇĞİÖŞÜ]/.test(s || "") || /\b(ve|bir|bu|ile|için|olan|da|de)\b/i.test(s || "");
+
+  // ---------- watchlist & recents ----------
+  const getList = () => store.get("ni.list", []);
+  const inList = (id) => getList().some((x) => x.id === id);
+  function toggleList(item) {
+    let l = getList();
+    if (l.some((x) => x.id === item.id)) l = l.filter((x) => x.id !== item.id);
+    else l.unshift({ id: item.id, title: item.title, originalTitle: item.originalTitle, year: item.year, type: item.type, imdb: item.imdb, jwTomato: item.jwTomato, posterPath: item.posterPath || null });
+    store.set("ni.list", l.slice(0, 60));
+  }
+  function addRecent(q) {
+    const r = store.get("ni.recent", []).filter((x) => x.toLowerCase() !== q.toLowerCase());
+    r.unshift(q);
+    store.set("ni.recent", r.slice(0, 8));
+  }
+
+  // ---------- views ----------
+  function rowHtml(r) {
+    const tc = tomatoClass(r.jwTomato);
+    const sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.originalTitle && r.originalTitle !== r.title ? r.originalTitle : null].filter(Boolean).join(" · ");
+    return `<button class="row" data-id="${esc(r.id)}">
+      ${posterImg(r.posterPath, r.title)}
+      <span class="t"><b>${esc(r.title)}</b><span>${esc(sub)}</span></span>
+      <span class="mini">
+        <span class="badge b-imdb" title="IMDb puanı">IMDb ${fmtImdb(r.imdb)}</span>
+        <span class="badge b-rt ${tc}" title="Rotten Tomatoes eleştirmen puanı">🍅 ${r.jwTomato == null ? "—" : r.jwTomato + "%"}</span>
+      </span>
+    </button>`;
+  }
+
+  function bindRows(root, items) {
+    root.querySelectorAll(".row").forEach((b) => {
+      b.onclick = () => openDetail(items.find((x) => x.id === b.dataset.id));
+    });
+  }
+
+  function renderHome() {
+    current = null;
+    const list = getList().filter((x) => filter === "all" || x.type === filter);
+    const recent = store.get("ni.recent", []);
+    const picks = ["Kış Uykusu", "Dark", "Inception", "Severance", "Breaking Bad", "Masumlar Apartmanı"];
+    view.innerHTML = `
+      ${recent.length ? `<div class="label">Son aramalar <button id="clr-rec">Temizle</button></div><div class="quick" id="recent">${recent.map((r) => `<button class="chip" data-q="${esc(r)}">${esc(r)}</button>`).join("")}</div>` : ""}
+      <div class="label">Listem${list.length ? ` · ${list.length}` : ""}</div>
+      ${list.length ? `<div class="list" id="mylist">${list.map(rowHtml).join("")}</div>`
+        : `<div class="empty">Henüz listende bir şey yok. Bir yapımın sayfasında <b>Listeme ekle</b>'ye dokununca burada görünür.</div>`}
+      <div class="label">Denemek için</div>
+      <div class="quick" id="picks">${picks.map((p) => `<button class="chip" data-q="${esc(p)}">${esc(p)}</button>`).join("")}</div>`;
+    view.querySelectorAll("[data-q]").forEach((b) => b.onclick = () => { qEl.value = b.dataset.q; toggleClear(); runSearch(b.dataset.q); });
+    const c = $("#clr-rec"); if (c) c.onclick = () => { store.set("ni.recent", []); renderHome(); };
+    const ml = $("#mylist"); if (ml) { bindRows(ml, list); loadImages(ml); }
+  }
+
+  function renderResults() {
+    if (!lastResults) return renderHome();
+    const items = lastResults.filter((x) => filter === "all" || x.type === filter);
+    view.innerHTML = `<div class="label">“${esc(lastQuery)}” için ${items.length} sonuç</div>` +
+      (items.length ? `<div class="list" id="res">${items.map(rowHtml).join("")}</div>`
+        : `<div class="empty">Bu adla ${filter === "all" ? "" : filter === "film" ? "film " : "dizi "}bulunamadı. Orijinal adını ya da Türkçe adını deneyebilirsin.</div>`);
+    const r = $("#res"); if (r) { bindRows(r, items); loadImages(r); }
+  }
+
+  let searchSeq = 0;
+  async function runSearch(q) {
+    q = q.trim();
+    if (!q) { lastResults = null; renderHome(); return; }
+    const seq = ++searchSeq;
+    current = null;
+    view.innerHTML = `<div class="label">Aranıyor…</div><div class="list">${'<div class="skel"></div>'.repeat(4)}</div>`;
+    try {
+      const d = await api({ action: "search", q });
+      if (seq !== searchSeq) return;
+      lastQuery = q; lastResults = d.results || [];
+      addRecent(q);
+      renderResults();
+    } catch (e) {
+      if (seq !== searchSeq) return;
+      view.innerHTML = "";
+      view.append(errorBox(e, () => runSearch(q)));
+    }
+  }
+
+  // ---------- detail ----------
+  const GROUPS = [["FLATRATE", "Abonelikle izle"], ["FREE", "Ücretsiz"], ["ADS", "Reklamlı ücretsiz"], ["RENT", "Kirala"], ["BUY", "Satın al"]];
+
+  async function openDetail(item) {
+    if (!item) return;
+    current = item.id;
+    window.scrollTo({ top: 0 });
+    view.innerHTML = `<button class="back" id="back">← Geri</button>
+      <div class="hero">${posterImg(item.posterPath, item.title)}<div class="meta"><h2>${esc(item.title)}</h2><div class="orig">${esc(item.year || "")}</div></div></div>
+      <div class="scores">${'<div class="skel" style="height:110px"></div>'.repeat(3)}</div>
+      <div class="section"><h3>Türkiye'de nerede?</h3><div class="skel"></div></div>`;
+    $("#back").onclick = goBack;
+    loadImages(view);
+    try {
+      const d = await api({ action: "details", id: item.id });
+      if (current !== item.id) return;
+      renderDetail(d);
+    } catch (e) {
+      if (current !== item.id) return;
+      const s = view.querySelector(".scores"); s.remove();
+      const sec = view.querySelector(".section"); sec.innerHTML = "";
+      sec.append(errorBox(e, () => openDetail(item)));
+    }
+  }
+
+  function goBack() { lastResults ? renderResults() : renderHome(); current = null; window.scrollTo({ top: 0 }); }
+
+  function renderDetail(d) {
+    const rt = d.rt && d.rt.found && !d.rt.error ? d.rt : null;
+    const critics = rt?.critics ?? d.jwTomato ?? null;
+    const criticsFromRT = rt?.critics != null;
+    const audience = rt?.audience ?? null;
+    const rtUrl = rt?.url || null;
+    const facts = [d.type === "dizi" ? "Dizi" : "Film", d.year, d.seasons ? d.seasons + " sezon" : null, d.runtime ? d.runtime + " dk" : null, d.age].filter(Boolean);
+    const imdbUrl = d.imdbId ? `https://www.imdb.com/title/${d.imdbId}/` : null;
+    const trailer = d.trailer || `https://www.youtube.com/results?search_query=${encodeURIComponent((d.originalTitle || d.title) + " " + (d.year || "") + " fragman")}`;
+
+    // summary source
+    let summary = d.descriptionTr, sumSrc = "JustWatch";
+    if (!summary && d.wiki?.text) { summary = d.wiki.text; sumSrc = "Türkçe Vikipedi"; }
+    const needsTranslate = summary && !looksTurkish(summary);
+
+    // providers
+    const groups = GROUPS.map(([k, label]) => [label, d.offers.filter((o) => o.kind === k)]).filter(([, a]) => a.length);
+    const provHtml = groups.length ? groups.map(([label, arr]) => `
+      <div class="prov-group"><span>${esc(label)}</span><div class="prov-items">
+        ${arr.map((o) => `<a class="prov-item" href="${esc(o.url)}" target="_blank" rel="noopener">
+          ${o.iconPath ? `<span class="pi" data-p="${esc(o.iconPath)}"></span>` : ""}<b>${esc(o.name)}</b>${o.price ? `<i>${esc(o.price)}</i>` : ""}</a>`).join("")}
+      </div></div>`).join("")
+      : `<div class="empty">Şu anda Türkiye'deki hiçbir dijital platformda görünmüyor.</div>`;
+
+    const listed = inList(d.id);
+    view.innerHTML = `
+      <button class="back" id="back">← Geri</button>
+      <div class="hero">
+        ${d.posterPath ? `<div class="blur" data-p="${esc(d.posterPath)}"></div>` : ""}
+        ${posterImg(d.posterPath, d.title)}
+        <div class="meta">
+          <h2>${esc(d.title)}</h2>
+          ${d.originalTitle && d.originalTitle !== d.title ? `<div class="orig">${esc(d.originalTitle)}</div>` : ""}
+          <div class="facts">${facts.map((f) => `<span class="fact">${esc(f)}</span>`).join("")}</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="listbtn" aria-pressed="${listed}">${listed ? "✓ Listemde" : "+ Listeme ekle"}</button>
+        <a class="btn" href="${esc(trailer)}" target="_blank" rel="noopener">▶ Fragman</a>
+      </div>
+
+      <div class="scores">
+        <a class="score imdb" ${imdbUrl ? `href="${imdbUrl}" target="_blank" rel="noopener"` : ""}>
+          <span class="src">IMDb</span>
+          <span class="num">${fmtImdb(d.imdb)}<small>/10</small></span>
+          <span class="sub">${d.imdbVotes ? esc(fmtVotes(d.imdbVotes)) : "Oy yok"}</span>
+        </a>
+        <a class="score" ${rtUrl ? `href="${esc(rtUrl)}" target="_blank" rel="noopener"` : ""}>
+          <span class="src">Eleştirmen · RT</span>
+          <span class="num ${tomatoClass(critics)}">${critics == null ? "—" : critics + "<small>%</small>"}</span>
+          <span class="sub">${critics == null ? "Henüz puan yok" : (critics >= 60 ? "Taze" : "Çürük") + (criticsFromRT && rt.criticsCount ? ` · ${esc(rt.criticsCount)} eleştiri` : "")}</span>
+          ${d.certifiedFresh ? `<span class="cf">SERTİFİKALI TAZE</span>` : ""}
+        </a>
+        <a class="score" ${rtUrl ? `href="${esc(rtUrl)}" target="_blank" rel="noopener"` : ""}>
+          <span class="src">İzleyici · RT</span>
+          <span class="num ${tomatoClass(audience)}">${audience == null ? "—" : audience + "<small>%</small>"}</span>
+          <span class="sub">${audience == null ? "Henüz puan yok" : esc((rt.audienceCount || "").replace("Ratings", "oy").replace(/,/g, "."))}</span>
+        </a>
+      </div>
+
+      <div class="section"><h3>Türkçe özet</h3>
+        ${summary ? `<p class="summary" id="sum">${esc(summary)}</p><div class="summary-src" id="sumsrc">Kaynak: ${esc(sumSrc)}</div>`
+          : `<div class="empty">Bu yapım için kaynaklarda Türkçe özet yok.</div>`}
+      </div>
+
+      <div class="section"><h3>Türkiye'de nerede izlenir?</h3><div class="prov">${provHtml}</div></div>
+
+      ${d.directors?.length || d.cast?.length ? `<div class="section"><h3>Kadro</h3><div class="people">
+        ${(d.directors || []).map((n) => `<span class="person">${esc(n)} <span>· Yönetmen</span></span>`).join("")}
+        ${(d.cast || []).slice(0, 8).map((c) => `<span class="person">${esc(c.name)}${c.as ? ` <span>· ${esc(c.as)}</span>` : ""}</span>`).join("")}
+      </div></div>` : ""}
+
+
+      <div class="section"><h3>Bağlantılar</h3><div class="actions">
+        ${imdbUrl ? `<a class="btn" href="${imdbUrl}" target="_blank" rel="noopener">IMDb</a>` : ""}
+        ${rtUrl ? `<a class="btn" href="${esc(rtUrl)}" target="_blank" rel="noopener">Rotten Tomatoes</a>` : ""}
+        ${d.jwUrl ? `<a class="btn" href="${esc(d.jwUrl)}" target="_blank" rel="noopener">JustWatch</a>` : ""}
+      </div></div>`;
+
+    $("#back").onclick = goBack;
+    loadImages(view);
+    $("#listbtn").onclick = (ev) => {
+      toggleList(d);
+      const on = inList(d.id);
+      ev.currentTarget.textContent = on ? "✓ Listemde" : "+ Listeme ekle";
+      ev.currentTarget.setAttribute("aria-pressed", on);
+    };
+    if (needsTranslate) $("#sumsrc").textContent = `Kaynak: ${sumSrc} · Türkçe özeti yok, orijinal dilinde`;
+  }
+
+  // ---------- wiring ----------
+  let timer;
+  const toggleClear = () => { $("#clear").hidden = !qEl.value; };
+  qEl.addEventListener("input", () => {
+    toggleClear();
+    clearTimeout(timer);
+    const v = qEl.value.trim();
+    if (!v) { searchSeq++; lastResults = null; renderHome(); return; }
+    if (v.length < 2) return;
+    timer = setTimeout(() => runSearch(v), 600);
+  });
+  $("#form").addEventListener("submit", (e) => { e.preventDefault(); clearTimeout(timer); qEl.blur(); runSearch(qEl.value); });
+  $("#clear").onclick = () => { qEl.value = ""; toggleClear(); searchSeq++; lastResults = null; renderHome(); qEl.focus(); };
+  document.querySelectorAll(".chip[data-f]").forEach((c) => c.onclick = () => {
+    filter = c.dataset.f;
+    document.querySelectorAll(".chip[data-f]").forEach((x) => x.setAttribute("aria-pressed", x === c));
+    if (current) return;
+    lastResults ? renderResults() : renderHome();
+  });
+
+  if (!KEY) {
+    document.getElementById("searchbar").hidden = true;
+    view.innerHTML = `<div class="empty" style="margin-top:16px"><b style="color:var(--fg)">Bu uygulama davetle kullanılıyor.</b><br>Sana gönderilen kişisel linki aç. Ana ekrana eklemek için o linki Safari'de açıp Paylaş → Ana Ekrana Ekle'ye dokun.</div>`;
+  } else {
+    renderHome();
+  }
+})();
+</script>
+
+</body>
+</html>
