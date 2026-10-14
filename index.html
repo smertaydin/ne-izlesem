@@ -34,6 +34,8 @@
   --none: #8d8794;
   --seen: #3d55c9;
   --seen-ink: #ffffff;
+  --live: #0d7f74;
+  --live-ink: #ffffff;
   --shadow: 0 1px 2px rgba(25, 20, 30, .06), 0 6px 20px rgba(25, 20, 30, .06);
   --display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
   --body: "Figtree", -apple-system, "Segoe UI", system-ui, sans-serif;
@@ -42,13 +44,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #121114; --surface: #1c1a1f; --sunk: #242128; --fg: #ede8e3; --muted: #a29b97; --line: #2f2b33;
-    --accent: #f2b33d; --accent-ink: #1a1306; --seen: #8fa3ff; --seen-ink: #0e1430; --fresh: #ff5a36; --rotten: #4cc764; --none: #7d7782;
+    --accent: #f2b33d; --accent-ink: #1a1306; --seen: #8fa3ff; --seen-ink: #0e1430; --live: #3fd1bf; --live-ink: #04231f; --fresh: #ff5a36; --rotten: #4cc764; --none: #7d7782;
     --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #121114; --surface: #1c1a1f; --sunk: #242128; --fg: #ede8e3; --muted: #a29b97; --line: #2f2b33;
-  --accent: #f2b33d; --accent-ink: #1a1306; --seen: #8fa3ff; --seen-ink: #0e1430; --fresh: #ff5a36; --rotten: #4cc764; --none: #7d7782;
+  --accent: #f2b33d; --accent-ink: #1a1306; --seen: #8fa3ff; --seen-ink: #0e1430; --live: #3fd1bf; --live-ink: #04231f; --fresh: #ff5a36; --rotten: #4cc764; --none: #7d7782;
   --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -59,8 +61,8 @@ a { color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 
 /* Header */
-.brand { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-block: 8px 4px; }
-.brand h1 { margin: 0; font: 800 2.4rem/1 var(--display); letter-spacing: .01em; text-transform: uppercase; }
+.brand { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; padding-block: 8px 4px; }
+.brand h1 { margin: 0; font: 800 2.4rem/1 var(--display); letter-spacing: .01em; text-transform: uppercase; white-space: nowrap; }
 .brand h1 span { color: var(--accent); }
 .brand small { font: 500 .7rem/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 
@@ -159,18 +161,31 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
 .sim span { display: block; font-size: .84rem; color: var(--muted); }
 
 /* My lists */
-.status { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-.sbtn { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid var(--line); background: var(--surface); border-radius: 12px; padding: 11px 10px; font-weight: 700; cursor: pointer; min-width: 0; }
+.status { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.sbtn { display: flex; align-items: center; justify-content: center; gap: 6px; border: 1.5px solid var(--line); background: var(--surface); border-radius: 12px; padding: 11px 6px; font-weight: 700; font-size: .9rem; cursor: pointer; min-width: 0; white-space: nowrap; }
 .sbtn svg { flex: none; }
 .sbtn.want[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .sbtn.seen[aria-pressed="true"] { background: var(--seen); color: var(--seen-ink); border-color: var(--seen); }
+.sbtn.watching[aria-pressed="true"] { background: var(--live); color: var(--live-ink); border-color: var(--live); }
+@media (max-width: 420px) { .sbtn svg { display: none; } }
+.prog { margin-top: 10px; background: var(--surface); border: 1.5px solid var(--live); border-radius: 12px; padding: 12px; display: grid; gap: 10px; }
+.prog-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.prog-top b { font-size: .95rem; }
+.prog-top span { font-size: .8rem; color: var(--muted); }
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.step { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; background: var(--sunk); border-radius: 10px; min-width: 0; }
+.step button { height: 40px; border: 0; background: none; font-size: 1.3rem; font-weight: 700; cursor: pointer; color: var(--fg); border-radius: 10px; }
+.step button:disabled { opacity: .3; cursor: default; }
+.step span { text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; font-size: .92rem; }
+.prog-actions { display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.btn.live { background: var(--live); color: var(--live-ink); border-color: var(--live); }
 .myrate { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; margin-top: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
 .myrate > span { font-size: .86rem; color: var(--muted); }
 .stars { display: flex; }
 .star { border: 0; background: none; padding: 2px 3px; font-size: 1.45rem; line-height: 1; color: var(--line); cursor: pointer; }
 .star.on { color: var(--accent); }
-.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--sunk); border-radius: 12px; padding: 4px; }
-.tab { border: 0; background: transparent; border-radius: 9px; padding: 9px 8px; font-weight: 700; font-size: .92rem; cursor: pointer; color: var(--muted); }
+.tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; background: var(--sunk); border-radius: 12px; padding: 4px; }
+.tab { border: 0; background: transparent; border-radius: 9px; padding: 9px 4px; font-weight: 700; font-size: .88rem; cursor: pointer; color: var(--muted); white-space: nowrap; min-width: 0; }
 .tab[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
 .tab span { font: 500 .78rem var(--mono); margin-left: 4px; }
 .listbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 8px; }
@@ -178,6 +193,7 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
 .tag { display: inline-block; margin-top: 4px; font: 600 .7rem/1 var(--body); padding: 3px 6px; border-radius: 5px; }
 .tag.want { color: var(--accent); border: 1px solid var(--accent); }
 .tag.seen { color: var(--seen); border: 1px solid var(--seen); }
+.tag.watching { color: var(--live); border: 1px solid var(--live); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 20; display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px); background: var(--fg); color: var(--bg); border-radius: 12px; padding: 11px 14px; font-size: .92rem; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
 .toast button { border: 0; background: none; color: var(--accent); font-weight: 700; cursor: pointer; padding: 0; white-space: nowrap; }
 .avail { display: inline-block; margin-top: 4px; font: 600 .7rem/1 var(--body); padding: 3px 6px; border-radius: 5px; border: 1px solid var(--line); color: var(--muted); }
@@ -315,7 +331,8 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
   const looksTurkish = (s) => /[çğıöşüÇĞİÖŞÜ]/.test(s || "") || /\b(ve|bir|bu|ile|için|olan|da|de)\b/i.test(s || "");
 
   // ---------- my lists (on this device) ----------
-  // Entry: { id, title, originalTitle, year, type, imdb, jwTomato, posterPath, status: "want"|"watched", addedAt, watchedAt?, myRating? }
+  // Entry: { id, title, originalTitle, year, type, imdb, jwTomato, posterPath, status: "want"|"watching"|"watched", addedAt,
+  //         startedAt?, updatedAt?, progress?: { s, e } (series: season, last watched episode), watchedAt?, myRating?, offers? }
   const LIST_KEY = "ni.list";
   let listCache = null;
   function loadList() {
@@ -326,7 +343,7 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
     const now = Date.now();
     l = l.filter((x) => x && x.id).map((x, i) => {
       const e = { ...x };
-      if (e.status !== "want" && e.status !== "watched") { e.status = "want"; changed = true; } // older lists → İzleyeceğim
+      if (!["want", "watching", "watched"].includes(e.status)) { e.status = "want"; changed = true; } // older lists → İzleyeceğim
       if (!e.addedAt) { e.addedAt = now - i * 1000; changed = true; } // keep the old order
       if ("poster" in e) { delete e.poster; changed = true; } // drop old embedded images
       return e;
@@ -352,8 +369,18 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
         posterPath: item.posterPath ?? prev?.posterPath ?? null, status,
       };
       if (item.offers) { e.offers = compactOffers(item.offers); e.offersAt = Date.now(); }
-      if (status === "watched") { e.watchedAt = prev?.status === "watched" && prev.watchedAt ? prev.watchedAt : Date.now(); e.addedAt = prev?.addedAt || Date.now(); }
-      else { e.addedAt = Date.now(); delete e.watchedAt; delete e.myRating; }
+      if (status === "watched") {
+        e.watchedAt = prev?.status === "watched" && prev.watchedAt ? prev.watchedAt : Date.now(); e.addedAt = prev?.addedAt || Date.now();
+        delete e.progress; delete e.updatedAt;
+      } else if (status === "watching") {
+        e.addedAt = prev?.addedAt || Date.now();
+        e.startedAt = prev?.status === "watching" && prev.startedAt ? prev.startedAt : Date.now();
+        e.updatedAt = Date.now();
+        e.progress = prev?.progress || (item.type === "dizi" ? { s: 1, e: 0 } : null);
+        delete e.watchedAt; delete e.myRating;
+      } else {
+        e.addedAt = Date.now(); delete e.watchedAt; delete e.myRating; delete e.progress; delete e.startedAt; delete e.updatedAt;
+      }
       l.unshift(e);
     }
     saveList(l);
@@ -364,6 +391,15 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
     if (prev) l.unshift(prev);
     saveList(l);
   }
+  function setProgress(id, prog) {
+    const l = loadList().slice();
+    const e = l.find((x) => x.id === id);
+    if (!e) return;
+    e.progress = prog; e.updatedAt = Date.now();
+    saveList(l);
+  }
+  const progTxt = (p) => !p ? "" : p.e > 0 ? `S${p.s} B${p.e}` : `S${p.s}`;
+
   function setRating(id, n) {
     const l = loadList().slice();
     const e = l.find((x) => x.id === id);
@@ -442,6 +478,11 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
     let sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.originalTitle && r.originalTitle !== r.title ? r.originalTitle : null].filter(Boolean).join(" · ");
     let tag = "";
     if (ctx === "watched") sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.watchedAt ? "İzlendi " + fmtDay(r.watchedAt) : null].filter(Boolean).join(" · ") + (r.myRating ? "  " + starsTxt(r.myRating) : "");
+    else if (ctx === "watching") {
+      sub = [r.type === "dizi" ? "Dizi" : "Film", r.progress ? (r.progress.e > 0 ? `${r.progress.s}. sezon ${r.progress.e}. bölüm izlendi` : `${r.progress.s}. sezon başlıyor`) : null, r.updatedAt ? fmtDay(r.updatedAt) : null].filter(Boolean).join(" · ");
+      const av = availability(r.offers, MINE || getMine());
+      if (av) tag = `<span class="avail ${av.cls}">${esc(av.text)}</span>`;
+    }
     else if (ctx === "want") {
       sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.addedAt > 1e12 ? "Eklendi " + fmtDay(r.addedAt) : null].filter(Boolean).join(" · ");
       const av = availability(r.offers, MINE || getMine());
@@ -451,6 +492,7 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
       const st = statusOf(r.id);
       if (st === "watched") { const e = entryOf(r.id); tag = `<span class="tag seen">İzledin${e?.myRating ? " · " + starsTxt(e.myRating) : ""}</span>`; }
       else if (st === "want") tag = `<span class="tag want">İzleyeceğim</span>`;
+      else if (st === "watching") { const p = entryOf(r.id)?.progress; tag = `<span class="tag watching">İzliyorum${p ? " · " + progTxt(p) : ""}</span>`; }
     }
     return `<button class="row" data-id="${esc(r.id)}">
       ${posterImg(r.posterPath, r.title)}
@@ -470,7 +512,9 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
 
   function renderHome() {
     current = null;
-    const tab = store.get("ni.tab", "want") === "watched" ? "watched" : "want";
+    const all0 = loadList();
+    const stored = store.get("ni.tab", null);
+    const tab = ["want", "watching", "watched"].includes(stored) ? stored : (all0.some((x) => x.status === "watching") ? "watching" : "want");
     const mine = getMine();
     MINE = mine;
     const onlyNow = tab === "want" && mine.size > 0 && store.get("ni.onlyNow", false) === true;
@@ -480,20 +524,25 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
     const nowCount = wantAll.filter((x) => availability(x.offers, mine)?.now).length;
     const want = onlyNow ? wantAll.filter((x) => availability(x.offers, mine)?.now) : wantAll;
     const watched = all.filter((x) => x.status === "watched" && byType(x)).sort((a, b) => (b.watchedAt || 0) - (a.watchedAt || 0));
-    const items = tab === "want" ? want : watched;
+    const watching = all.filter((x) => x.status === "watching" && byType(x)).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    const items = tab === "want" ? want : tab === "watching" ? watching : watched;
     const recent = store.get("ni.recent", []);
     const picks = ["Kış Uykusu", "Dark", "Inception", "Severance", "Breaking Bad", "Masumlar Apartmanı"];
     const rated = watched.filter((x) => x.myRating);
     const avg = rated.length ? (rated.reduce((s, x) => s + x.myRating, 0) / rated.length).toLocaleString("tr-TR", { maximumFractionDigits: 1 }) : null;
     const platBtn = `<button class="linkbtn" id="plat-open">${mine.size ? `Platformlarım (${mine.size})` : "Platformlarını seç"}</button>`;
-    const bar = tab === "want"
+    const bar = tab === "watching"
+      ? (watching.length ? `<div class="listbar"><span class="note">En son ilerlediğin üstte</span>${platBtn}</div>` : "")
+      : tab === "want"
       ? (wantAll.length ? `<div class="listbar">
           ${mine.size ? `<button class="chip small" id="only-now" aria-pressed="${onlyNow}">Şimdi izleyebileceklerim · ${nowCount}</button>` : `<span class="note">Aboneliklerini seç, hangisini hemen izleyebileceğini görelim.</span>`}
           ${platBtn}
         </div>
         ${want.length > 1 ? `<div class="listbar" style="margin-top:0"><span class="note">En son eklenen üstte</span><button class="btn" id="random">Ne izlesem? Rastgele seç</button></div>` : ""}` : "")
       : (watched.length ? `<div class="listbar"><span class="note">${watched.length} yapım izledin${avg ? ` · puan ortalaman ${avg}/5` : ""}</span></div>` : "");
-    const empty = tab === "want"
+    const empty = tab === "watching"
+      ? `<div class="empty">Takip ettiğin dizileri burada tut, kaldığın sezonu ve bölümü hatırlayalım. Bir dizinin sayfasında <b>İzliyorum</b>'a dokun.</div>`
+      : tab === "want"
       ? (onlyNow && wantAll.length ? `<div class="empty">Listendekilerden hiçbiri şu an platformlarında yok. Platform bilgisi, yapımı listene eklediğin ya da açtığın an güncellenir.</div>`
         : `<div class="empty">İzlemek istediklerini burada topla. Bir yapımın sayfasında <b>İzleyeceğim</b>'e dokun.</div>`)
       : `<div class="empty">İzlediklerin burada tarihleriyle birikir. Bir yapımın sayfasında <b>İzledim</b>'e dokun, istersen puan ver.</div>`;
@@ -501,6 +550,7 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
       ${recent.length ? `<div class="label">Son aramalar <button id="clr-rec">Temizle</button></div><div class="quick" id="recent">${recent.map((r) => `<button class="chip" data-q="${esc(r)}">${esc(r)}</button>`).join("")}</div>` : ""}
       <div class="label">Listelerim</div>
       <div class="tabs" role="tablist" aria-label="Listelerim">
+        <button class="tab" role="tab" data-tab="watching" aria-selected="${tab === "watching"}">İzliyorum<span>${watching.length}</span></button>
         <button class="tab" role="tab" data-tab="want" aria-selected="${tab === "want"}">İzleyeceğim<span>${wantAll.length}</span></button>
         <button class="tab" role="tab" data-tab="watched" aria-selected="${tab === "watched"}">İzledim<span>${watched.length}</span></button>
       </div>
@@ -681,8 +731,10 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
       </div>
       <div class="status" role="group" aria-label="Listelerim">
         <button class="sbtn want" id="st-want" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>İzleyeceğim</button>
+        <button class="sbtn watching" id="st-watching" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>İzliyorum</button>
         <button class="sbtn seen" id="st-seen" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>İzledim</button>
       </div>
+      <div class="prog" id="prog" hidden></div>
       <div class="myrate" id="myrate" hidden></div>
       <div class="sharebox" id="sharebox" hidden></div>
       <div class="actions">
@@ -736,23 +788,43 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
     const paintStatus = () => {
       const e = entryOf(d.id);
       $("#st-want").setAttribute("aria-pressed", e?.status === "want");
+      $("#st-watching").setAttribute("aria-pressed", e?.status === "watching");
       $("#st-seen").setAttribute("aria-pressed", e?.status === "watched");
       const box = $("#myrate");
       box.hidden = e?.status !== "watched";
-      if (box.hidden) return;
-      box.innerHTML = `<span>Puanın</span><div class="stars" role="group" aria-label="Puanın">${[1, 2, 3, 4, 5].map((n) =>
-        `<button class="star ${e.myRating >= n ? "on" : ""}" data-star="${n}" aria-label="5 üzerinden ${n}" aria-pressed="${e.myRating === n}">★</button>`).join("")}</div>
-        <span>${esc(fmtDay(e.watchedAt))} tarihinde izledin</span>`;
-      box.querySelectorAll("[data-star]").forEach((b) => b.onclick = () => { setRating(d.id, +b.dataset.star); paintStatus(); });
+      if (!box.hidden) {
+        box.innerHTML = `<span>Puanın</span><div class="stars" role="group" aria-label="Puanın">${[1, 2, 3, 4, 5].map((n) =>
+          `<button class="star ${e.myRating >= n ? "on" : ""}" data-star="${n}" aria-label="5 üzerinden ${n}" aria-pressed="${e.myRating === n}">★</button>`).join("")}</div>
+          <span>${esc(fmtDay(e.watchedAt))} tarihinde izledin</span>`;
+        box.querySelectorAll("[data-star]").forEach((b) => b.onclick = () => { setRating(d.id, +b.dataset.star); paintStatus(); });
+      }
+      const pb = $("#prog");
+      pb.hidden = e?.status !== "watching";
+      if (pb.hidden) return;
+      const p = e.progress;
+      const maxS = d.seasons || null;
+      pb.innerHTML = p ? `
+        <div class="prog-top"><b>Kaldığın yer</b><span>${[maxS ? `Toplam ${maxS} sezon` : null, e.updatedAt ? "güncellendi " + fmtDay(e.updatedAt) : null].filter(Boolean).map(esc).join(" · ")}</span></div>
+        <div class="steps">
+          <div class="step"><button data-ds="-1" aria-label="Önceki sezon" ${p.s <= 1 ? "disabled" : ""}>−</button><span>${p.s}. sezon</span><button data-ds="1" aria-label="Sonraki sezon" ${maxS && p.s >= maxS ? "disabled" : ""}>+</button></div>
+          <div class="step"><button data-de="-1" aria-label="Önceki bölüm" ${p.e <= 0 ? "disabled" : ""}>−</button><span>${p.e > 0 ? p.e + ". bölüm" : "Başlamadın"}</span><button data-de="1" aria-label="Sonraki bölüm">+</button></div>
+        </div>
+        <div class="prog-actions"><button class="btn live" id="nextep">+1 bölüm izledim</button><button class="linkbtn" id="finish">Diziyi bitirdim</button></div>`
+        : `<div class="prog-top"><b>İzlemeye devam ediyorsun</b><span>${e.startedAt ? esc(fmtDay(e.startedAt)) + " tarihinde başladın" : ""}</span></div>
+        <div class="prog-actions"><span></span><button class="linkbtn" id="finish">Bitirdim</button></div>`;
+      pb.querySelectorAll("[data-ds]").forEach((b) => b.onclick = () => { const s2 = Math.max(1, p.s + +b.dataset.ds); setProgress(d.id, { s: s2, e: s2 !== p.s ? 0 : p.e }); paintStatus(); });
+      pb.querySelectorAll("[data-de]").forEach((b) => b.onclick = () => { setProgress(d.id, { s: p.s, e: Math.max(0, p.e + +b.dataset.de) }); paintStatus(); });
+      const ne = $("#nextep"); if (ne) ne.onclick = () => { setProgress(d.id, { s: p.s, e: p.e + 1 }); paintStatus(); toast(`${p.s}. sezon ${p.e + 1}. bölüm işaretlendi`, () => { setProgress(d.id, p); if (current === d.id) paintStatus(); }); };
+      $("#finish").onclick = () => flip("watched");
     };
+    const TO = { want: "İzleyeceklerine", watching: "İzliyorum listene", watched: "İzlediklerine" };
+    const FROM = { want: "İzleyeceklerinden", watching: "İzliyorum listenden", watched: "İzlediklerinden" };
     const flip = (status) => {
       const before = statusOf(d.id);
       const next = before === status ? null : status;
       const prev = setStatus(d, next);
       paintStatus();
-      const msg = !next ? (before === "watched" ? "İzlediklerinden çıkarıldı" : "İzleyeceklerinden çıkarıldı")
-        : next === "watched" ? (before === "want" ? "İzlediklerine taşındı" : "İzlediklerine eklendi")
-        : (before === "watched" ? "İzleyeceklerine taşındı" : "İzleyeceklerine eklendi");
+      const msg = !next ? `${FROM[before]} çıkarıldı` : before ? `${TO[next]} taşındı` : `${TO[next]} eklendi`;
       toast(msg, () => { restoreEntry(d.id, prev); if (current === d.id) paintStatus(); });
     };
     if (entryOf(d.id)) refreshOffers(d.id, d.offers); // keep the saved platform info fresh, no extra request
@@ -770,6 +842,7 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
       }
     };
     $("#st-want").onclick = () => flip("want");
+    $("#st-watching").onclick = () => flip("watching");
     $("#st-seen").onclick = () => flip("watched");
     paintStatus();
     if (needsTranslate) $("#sumsrc").textContent = `Kaynak: ${sumSrc} · Türkçe özeti yok, orijinal dilinde`;
