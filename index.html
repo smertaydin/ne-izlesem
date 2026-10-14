@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ne İzlesem">
@@ -68,7 +68,7 @@ a { color: inherit; }
 .field { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1.5px solid var(--line); border-radius: 14px; padding: 0 12px; box-shadow: var(--shadow); }
 .field:focus-within { border-color: var(--accent); }
 .field svg { flex: none; color: var(--muted); }
-.field input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 13px 0; font-size: 1.05rem; outline: none; }
+.field input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 12px 0; font-size: 18px; outline: none; } /* ≥16px so iOS does not zoom on focus */
 .field button { border: 0; background: none; color: var(--muted); padding: 6px; cursor: pointer; }
 .chips { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip { border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 5px 13px; font-size: .88rem; font-weight: 600; cursor: pointer; }
