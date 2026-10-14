@@ -180,6 +180,20 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
 .tag.seen { color: var(--seen); border: 1px solid var(--seen); }
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 20; display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px); background: var(--fg); color: var(--bg); border-radius: 12px; padding: 11px 14px; font-size: .92rem; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
 .toast button { border: 0; background: none; color: var(--accent); font-weight: 700; cursor: pointer; padding: 0; white-space: nowrap; }
+.avail { display: inline-block; margin-top: 4px; font: 600 .7rem/1 var(--body); padding: 3px 6px; border-radius: 5px; border: 1px solid var(--line); color: var(--muted); }
+.avail.now { color: var(--rotten); border-color: var(--rotten); }
+.row .t .avail, .row .t .tag { display: inline-block; width: auto; max-width: 100%; overflow-wrap: anywhere; }
+.avail.free { color: var(--seen); border-color: var(--seen); }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 700; font-size: .86rem; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.chip.small { padding: 4px 11px; font-size: .82rem; }
+.plats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin-top: 12px; }
+.plat { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1.5px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px; font-weight: 600; cursor: pointer; text-align: left; min-width: 0; }
+.plat::after { content: ""; flex: none; width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid var(--line); }
+.plat[aria-pressed="true"] { border-color: var(--rotten); }
+.plat[aria-pressed="true"]::after { background: var(--rotten); border-color: var(--rotten); box-shadow: inset 0 0 0 3px var(--surface); }
+.prov-item.mine { border-color: var(--rotten); border-width: 1.5px; }
+.prov-item .minetag { font: 600 .66rem/1 var(--body); color: var(--rotten); }
+.sharebox { margin-top: 10px; background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 12px; font-size: .88rem; white-space: pre-wrap; overflow-wrap: anywhere; user-select: all; -webkit-user-select: all; }
 .foot { margin-top: 34px; font-size: .76rem; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
 @media (max-width: 380px) { .hero { grid-template-columns: 88px 1fr; } .hero .poster { width: 88px; } .score .num { font-size: 1.8rem; } }
@@ -337,6 +351,7 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
         imdb: item.imdb ?? prev?.imdb ?? null, jwTomato: item.jwTomato ?? prev?.jwTomato ?? null,
         posterPath: item.posterPath ?? prev?.posterPath ?? null, status,
       };
+      if (item.offers) { e.offers = compactOffers(item.offers); e.offersAt = Date.now(); }
       if (status === "watched") { e.watchedAt = prev?.status === "watched" && prev.watchedAt ? prev.watchedAt : Date.now(); e.addedAt = prev?.addedAt || Date.now(); }
       else { e.addedAt = Date.now(); delete e.watchedAt; delete e.myRating; }
       l.unshift(e);
@@ -383,6 +398,35 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
     toastTimer = setTimeout(() => t.remove(), 4500);
   }
 
+  // ---------- my platforms ----------
+  const APP_URL = "https://smertaydin.github.io/ne-izlesem/";
+  const PLATFORMS = [["netflix", "Netflix"], ["max", "HBO Max"], ["amazonprimevideo", "Prime Video"], ["disneyplus", "Disney+"],
+    ["turkcelltvplus", "TV+"], ["exxen", "Exxen"], ["tabii", "tabii"], ["todtv", "TOD"], ["mubi", "MUBI"], ["tivibu", "Tivibu"],
+    ["dsmartgo", "D-Smart Go"], ["itunes", "Apple TV"], ["youtubered", "YouTube Premium"], ["puhutv", "puhutv"]];
+  const getMine = () => new Set(store.get("ni.mine", []));
+  const SUB = ["FLATRATE", "FREE", "ADS"];
+  const compactOffers = (offers) => (offers || []).map((o) => ({ k: o.kind, n: o.name, t: o.tech || null }));
+  // What a saved offer snapshot means for me right now.
+  function availability(offers, mine) {
+    if (!offers) return null; // saved before this feature; refreshes when the title is opened
+    const now = offers.find((o) => SUB.includes(o.k) && o.t && mine.has(o.t));
+    if (now) return { cls: "now", text: "İzleyebilirsin · " + now.n, now: true };
+    const free = offers.find((o) => o.k === "FREE" || o.k === "ADS");
+    if (free) return { cls: "free", text: "Ücretsiz · " + free.n, now: true };
+    const sub = offers.find((o) => o.k === "FLATRATE");
+    if (sub) return { cls: "", text: (mine.size ? "Başka platformda · " : "Abonelikte · ") + sub.n, now: false };
+    const rent = offers.find((o) => o.k === "RENT" || o.k === "BUY");
+    if (rent) return { cls: "", text: "Kiralık · " + rent.n, now: false };
+    return { cls: "", text: "Şu an platformda yok", now: false };
+  }
+  function refreshOffers(id, offers) {
+    const l = loadList().slice();
+    const e = l.find((x) => x.id === id);
+    if (!e) return;
+    e.offers = compactOffers(offers); e.offersAt = Date.now();
+    saveList(l);
+  }
+
   // ---------- recents ----------
   function addRecent(q) {
     const r = store.get("ni.recent", []).filter((x) => x.toLowerCase() !== q.toLowerCase());
@@ -391,13 +435,18 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
   }
 
   // ---------- views ----------
+  let MINE = null; // set while rendering a list, so rows do not re-read storage
   function rowHtml(r, ctx) {
     if (typeof ctx !== "string") ctx = ""; // also used directly as an Array.map callback
     const tc = tomatoClass(r.jwTomato);
     let sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.originalTitle && r.originalTitle !== r.title ? r.originalTitle : null].filter(Boolean).join(" · ");
     let tag = "";
     if (ctx === "watched") sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.watchedAt ? "İzlendi " + fmtDay(r.watchedAt) : null].filter(Boolean).join(" · ") + (r.myRating ? "  " + starsTxt(r.myRating) : "");
-    else if (ctx === "want") sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.addedAt > 1e12 ? "Eklendi " + fmtDay(r.addedAt) : null].filter(Boolean).join(" · ");
+    else if (ctx === "want") {
+      sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.addedAt > 1e12 ? "Eklendi " + fmtDay(r.addedAt) : null].filter(Boolean).join(" · ");
+      const av = availability(r.offers, MINE || getMine());
+      if (av) tag = `<span class="avail ${av.cls}">${esc(av.text)}</span>`;
+    }
     else {
       const st = statusOf(r.id);
       if (st === "watched") { const e = entryOf(r.id); tag = `<span class="tag seen">İzledin${e?.myRating ? " · " + starsTxt(e.myRating) : ""}</span>`; }
@@ -422,38 +471,71 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
   function renderHome() {
     current = null;
     const tab = store.get("ni.tab", "want") === "watched" ? "watched" : "want";
+    const mine = getMine();
+    MINE = mine;
+    const onlyNow = tab === "want" && mine.size > 0 && store.get("ni.onlyNow", false) === true;
     const byType = (x) => filter === "all" || x.type === filter;
     const all = loadList();
-    const want = all.filter((x) => x.status === "want" && byType(x)).sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+    const wantAll = all.filter((x) => x.status === "want" && byType(x)).sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+    const nowCount = wantAll.filter((x) => availability(x.offers, mine)?.now).length;
+    const want = onlyNow ? wantAll.filter((x) => availability(x.offers, mine)?.now) : wantAll;
     const watched = all.filter((x) => x.status === "watched" && byType(x)).sort((a, b) => (b.watchedAt || 0) - (a.watchedAt || 0));
     const items = tab === "want" ? want : watched;
     const recent = store.get("ni.recent", []);
     const picks = ["Kış Uykusu", "Dark", "Inception", "Severance", "Breaking Bad", "Masumlar Apartmanı"];
     const rated = watched.filter((x) => x.myRating);
     const avg = rated.length ? (rated.reduce((s, x) => s + x.myRating, 0) / rated.length).toLocaleString("tr-TR", { maximumFractionDigits: 1 }) : null;
+    const platBtn = `<button class="linkbtn" id="plat-open">${mine.size ? `Platformlarım (${mine.size})` : "Platformlarını seç"}</button>`;
     const bar = tab === "want"
-      ? (want.length > 1 ? `<div class="listbar"><span class="note">En son eklenen üstte</span><button class="btn" id="random">Ne izlesem? Rastgele seç</button></div>` : "")
+      ? (wantAll.length ? `<div class="listbar">
+          ${mine.size ? `<button class="chip small" id="only-now" aria-pressed="${onlyNow}">Şimdi izleyebileceklerim · ${nowCount}</button>` : `<span class="note">Aboneliklerini seç, hangisini hemen izleyebileceğini görelim.</span>`}
+          ${platBtn}
+        </div>
+        ${want.length > 1 ? `<div class="listbar" style="margin-top:0"><span class="note">En son eklenen üstte</span><button class="btn" id="random">Ne izlesem? Rastgele seç</button></div>` : ""}` : "")
       : (watched.length ? `<div class="listbar"><span class="note">${watched.length} yapım izledin${avg ? ` · puan ortalaman ${avg}/5` : ""}</span></div>` : "");
     const empty = tab === "want"
-      ? `<div class="empty">İzlemek istediklerini burada topla. Bir yapımın sayfasında <b>İzleyeceğim</b>'e dokun.</div>`
+      ? (onlyNow && wantAll.length ? `<div class="empty">Listendekilerden hiçbiri şu an platformlarında yok. Platform bilgisi, yapımı listene eklediğin ya da açtığın an güncellenir.</div>`
+        : `<div class="empty">İzlemek istediklerini burada topla. Bir yapımın sayfasında <b>İzleyeceğim</b>'e dokun.</div>`)
       : `<div class="empty">İzlediklerin burada tarihleriyle birikir. Bir yapımın sayfasında <b>İzledim</b>'e dokun, istersen puan ver.</div>`;
     view.innerHTML = `
       ${recent.length ? `<div class="label">Son aramalar <button id="clr-rec">Temizle</button></div><div class="quick" id="recent">${recent.map((r) => `<button class="chip" data-q="${esc(r)}">${esc(r)}</button>`).join("")}</div>` : ""}
       <div class="label">Listelerim</div>
       <div class="tabs" role="tablist" aria-label="Listelerim">
-        <button class="tab" role="tab" data-tab="want" aria-selected="${tab === "want"}">İzleyeceğim<span>${want.length}</span></button>
+        <button class="tab" role="tab" data-tab="want" aria-selected="${tab === "want"}">İzleyeceğim<span>${wantAll.length}</span></button>
         <button class="tab" role="tab" data-tab="watched" aria-selected="${tab === "watched"}">İzledim<span>${watched.length}</span></button>
       </div>
       ${bar}
       ${items.length ? `<div class="list" id="mylist" ${bar ? "" : 'style="margin-top:12px"'}>${items.map((x) => rowHtml(x, tab)).join("")}</div>` : `<div style="margin-top:12px">${empty}</div>`}
       <div class="label">Denemek için</div>
       <div class="quick" id="picks">${picks.map((p) => `<button class="chip" data-q="${esc(p)}">${esc(p)}</button>`).join("")}</div>`;
+    MINE = null;
     view.querySelectorAll("[data-q]").forEach((b) => b.onclick = () => { qEl.value = b.dataset.q; toggleClear(); runSearch(b.dataset.q); });
     view.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { store.set("ni.tab", b.dataset.tab); renderHome(); });
     const rnd = $("#random");
     if (rnd) rnd.onclick = () => openDetail(want[Math.floor(Math.random() * want.length)]);
+    const on = $("#only-now"); if (on) on.onclick = () => { store.set("ni.onlyNow", !onlyNow); renderHome(); };
+    const po = $("#plat-open"); if (po) po.onclick = () => renderPlatforms(() => { renderHome(); window.scrollTo({ top: 0 }); });
     const c = $("#clr-rec"); if (c) c.onclick = () => { store.set("ni.recent", []); renderHome(); };
     const ml = $("#mylist"); if (ml) { bindRows(ml, items); loadImages(ml); }
+  }
+
+  function renderPlatforms(onBack) {
+    current = "platforms";
+    window.scrollTo({ top: 0 });
+    const draw = () => {
+      const mine = getMine();
+      view.innerHTML = `<button class="back" id="back">← Geri</button>
+        <div class="phead"><h2>Platformlarım</h2><span>Abone olduklarını seç. Listende hangisini hemen izleyebileceğini gösteririz; yapım sayfalarında da bunlar öne çıkar. Bu seçim sadece bu cihazda saklanır.</span></div>
+        <div class="plats" role="group" aria-label="Platformlar">${PLATFORMS.map(([t, n]) => `<button class="plat" data-t="${t}" aria-pressed="${mine.has(t)}">${esc(n)}</button>`).join("")}</div>`;
+      $("#back").onclick = onBack;
+      view.querySelectorAll("[data-t]").forEach((b) => b.onclick = () => {
+        const m = getMine();
+        m.has(b.dataset.t) ? m.delete(b.dataset.t) : m.add(b.dataset.t);
+        store.set("ni.mine", [...m]);
+        b.setAttribute("aria-pressed", m.has(b.dataset.t));
+      });
+    };
+    draw();
   }
 
   function renderResults() {
@@ -566,13 +648,21 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
     const needsTranslate = summary && !looksTurkish(summary);
 
     // providers
-    const groups = GROUPS.map(([k, label]) => [label, d.offers.filter((o) => o.kind === k)]).filter(([, a]) => a.length);
+    const mine = getMine();
+    const groups = GROUPS.map(([k, label]) => [label, d.offers.filter((o) => o.kind === k).sort((a, b) => (mine.has(b.tech) ? 1 : 0) - (mine.has(a.tech) ? 1 : 0))]).filter(([, a]) => a.length);
     const provHtml = groups.length ? groups.map(([label, arr]) => `
       <div class="prov-group"><span>${esc(label)}</span><div class="prov-items">
-        ${arr.map((o) => `<a class="prov-item" href="${esc(o.url)}" target="_blank" rel="noopener">
-          ${o.iconPath ? `<span class="pi" data-p="${esc(o.iconPath)}"></span>` : ""}<b>${esc(o.name)}</b>${o.price ? `<i>${esc(o.price)}</i>` : ""}</a>`).join("")}
+        ${arr.map((o) => `<a class="prov-item ${o.kind === "FLATRATE" && mine.has(o.tech) ? "mine" : ""}" href="${esc(o.url)}" target="_blank" rel="noopener">
+          ${o.iconPath ? `<span class="pi" data-p="${esc(o.iconPath)}"></span>` : ""}<span><b>${esc(o.name)}</b>${o.kind === "FLATRATE" && mine.has(o.tech) ? `<br><span class="minetag">Aboneliğin var</span>` : ""}</span>${o.price ? `<i>${esc(o.price)}</i>` : ""}</a>`).join("")}
       </div></div>`).join("")
       : `<div class="empty">Şu anda Türkiye'deki hiçbir dijital platformda görünmüyor.</div>`;
+    const provNote = mine.size ? "" : `<p class="note" style="margin:10px 0 0">Aboneliklerini seçersen burada öne çıkarırız. <button class="linkbtn" id="plat-open">Platformlarını seç</button></p>`;
+    // share text: useful on its own, even for someone without the app
+    const subNames = [...new Set(d.offers.filter((o) => SUB.includes(o.kind)).map((o) => o.name))];
+    const rentNames = [...new Set(d.offers.filter((o) => o.kind === "RENT" || o.kind === "BUY").map((o) => o.name))];
+    const whereLine = subNames.length ? "İzle: " + subNames.slice(0, 4).join(", ") : rentNames.length ? "Kirala: " + rentNames.slice(0, 3).join(", ") : "Türkiye'de şu an platformda yok";
+    const shareText = `${d.title}${d.year ? ` (${d.year})` : ""}\nIMDb ${fmtImdb(d.imdb)} · RT eleştirmen ${critics == null ? "—" : critics + "%"} · izleyici ${audience == null ? "—" : audience + "%"}\n${whereLine}`;
+    const shareUrl = APP_URL + "#" + d.id;
 
     const dirs = d.directorList || (d.directors || []).map((n) => ({ name: n, id: null }));
     const personChip = (name, id, sub, role) => id
@@ -594,8 +684,10 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
         <button class="sbtn seen" id="st-seen" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>İzledim</button>
       </div>
       <div class="myrate" id="myrate" hidden></div>
+      <div class="sharebox" id="sharebox" hidden></div>
       <div class="actions">
         <a class="btn" href="${esc(trailer)}" target="_blank" rel="noopener">▶ Fragman</a>
+        <button class="btn" id="sharebtn">Paylaş</button>
       </div>
 
       <div class="scores">
@@ -622,7 +714,7 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
           : `<div class="empty">Bu yapım için kaynaklarda Türkçe özet yok.</div>`}
       </div>
 
-      <div class="section"><h3>Türkiye'de nerede izlenir?</h3><div class="prov">${provHtml}</div></div>
+      <div class="section"><h3>Türkiye'de nerede izlenir?</h3><div class="prov">${provHtml}</div>${provNote}</div>
 
       ${dirs.length || d.cast?.length ? `<div class="section"><h3>Kadro · tüm yapımları için dokun</h3><div class="people">
         ${dirs.map((x) => personChip(x.name, x.id, "Yönetmen", "Yönetmen")).join("")}
@@ -663,6 +755,20 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
         : (before === "watched" ? "İzleyeceklerine taşındı" : "İzleyeceklerine eklendi");
       toast(msg, () => { restoreEntry(d.id, prev); if (current === d.id) paintStatus(); });
     };
+    if (entryOf(d.id)) refreshOffers(d.id, d.offers); // keep the saved platform info fresh, no extra request
+    const po = $("#plat-open"); if (po) po.onclick = () => renderPlatforms(() => openDetail(d, backHere));
+    $("#sharebtn").onclick = async () => {
+      const full = shareText + "\n" + shareUrl;
+      if (navigator.share) {
+        try { await navigator.share({ title: d.title, text: shareText, url: shareUrl }); return; }
+        catch (e) { if (e && e.name === "AbortError") return; }
+      }
+      try { await navigator.clipboard.writeText(full); toast("Kopyalandı, istediğin yere yapıştır"); }
+      catch {
+        const box = $("#sharebox"); box.textContent = full; box.hidden = false;
+        toast("Metni seçip kopyalayabilirsin");
+      }
+    };
     $("#st-want").onclick = () => flip("want");
     $("#st-seen").onclick = () => flip("watched");
     paintStatus();
@@ -690,11 +796,22 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
     lastResults ? renderResults() : renderHome();
   });
 
+  function openFromHash() {
+    const m = (location.hash || "").match(/^#((?:tm|ts)\d{1,10})$/);
+    if (!m) return;
+    try { history.replaceState(null, "", location.pathname + location.search); } catch { /* */ }
+    openDetail({ id: m[1], title: "", posterPath: null });
+  }
+  addEventListener("hashchange", openFromHash);
+  if ("serviceWorker" in navigator) {
+    addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => { /* offline mode is optional */ }));
+  }
   if (!KEY) {
     document.getElementById("searchbar").hidden = true;
     view.innerHTML = `<div class="empty" style="margin-top:16px"><b style="color:var(--fg)">Bu uygulama davetle kullanılıyor.</b><br>Sana gönderilen kişisel linki aç. Ana ekrana eklemek için o linki Safari'de açıp Paylaş → Ana Ekrana Ekle'ye dokun.</div>`;
   } else {
     renderHome();
+    openFromHash();
   }
 })();
 </script>
