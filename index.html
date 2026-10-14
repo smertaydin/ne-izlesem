@@ -32,6 +32,8 @@
   --fresh: #d92b06;
   --rotten: #2c8a3e;
   --none: #8d8794;
+  --seen: #3d55c9;
+  --seen-ink: #ffffff;
   --shadow: 0 1px 2px rgba(25, 20, 30, .06), 0 6px 20px rgba(25, 20, 30, .06);
   --display: "Big Shoulders Display", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
   --body: "Figtree", -apple-system, "Segoe UI", system-ui, sans-serif;
@@ -40,13 +42,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #121114; --surface: #1c1a1f; --sunk: #242128; --fg: #ede8e3; --muted: #a29b97; --line: #2f2b33;
-    --accent: #f2b33d; --accent-ink: #1a1306; --fresh: #ff5a36; --rotten: #4cc764; --none: #7d7782;
+    --accent: #f2b33d; --accent-ink: #1a1306; --seen: #8fa3ff; --seen-ink: #0e1430; --fresh: #ff5a36; --rotten: #4cc764; --none: #7d7782;
     --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #121114; --surface: #1c1a1f; --sunk: #242128; --fg: #ede8e3; --muted: #a29b97; --line: #2f2b33;
-  --accent: #f2b33d; --accent-ink: #1a1306; --fresh: #ff5a36; --rotten: #4cc764; --none: #7d7782;
+  --accent: #f2b33d; --accent-ink: #1a1306; --seen: #8fa3ff; --seen-ink: #0e1430; --fresh: #ff5a36; --rotten: #4cc764; --none: #7d7782;
   --shadow: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -156,6 +158,28 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
 .sim b { font-weight: 700; }
 .sim span { display: block; font-size: .84rem; color: var(--muted); }
 
+/* My lists */
+.status { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.sbtn { display: flex; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid var(--line); background: var(--surface); border-radius: 12px; padding: 11px 10px; font-weight: 700; cursor: pointer; min-width: 0; }
+.sbtn svg { flex: none; }
+.sbtn.want[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.sbtn.seen[aria-pressed="true"] { background: var(--seen); color: var(--seen-ink); border-color: var(--seen); }
+.myrate { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; margin-top: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
+.myrate > span { font-size: .86rem; color: var(--muted); }
+.stars { display: flex; }
+.star { border: 0; background: none; padding: 2px 3px; font-size: 1.45rem; line-height: 1; color: var(--line); cursor: pointer; }
+.star.on { color: var(--accent); }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--sunk); border-radius: 12px; padding: 4px; }
+.tab { border: 0; background: transparent; border-radius: 9px; padding: 9px 8px; font-weight: 700; font-size: .92rem; cursor: pointer; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
+.tab span { font: 500 .78rem var(--mono); margin-left: 4px; }
+.listbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0 8px; }
+.listbar .note { font-size: .84rem; }
+.tag { display: inline-block; margin-top: 4px; font: 600 .7rem/1 var(--body); padding: 3px 6px; border-radius: 5px; }
+.tag.want { color: var(--accent); border: 1px solid var(--accent); }
+.tag.seen { color: var(--seen); border: 1px solid var(--seen); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 20; display: flex; align-items: center; gap: 14px; max-width: calc(100% - 32px); background: var(--fg); color: var(--bg); border-radius: 12px; padding: 11px 14px; font-size: .92rem; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.toast button { border: 0; background: none; color: var(--accent); font-weight: 700; cursor: pointer; padding: 0; white-space: nowrap; }
 .foot { margin-top: 34px; font-size: .76rem; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
 @media (max-width: 380px) { .hero { grid-template-columns: 88px 1fr; } .hero .poster { width: 88px; } .score .num { font-size: 1.8rem; } }
@@ -276,15 +300,90 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
   const fmtImdb = (v) => v == null ? "—" : Number(v).toLocaleString("tr-TR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
   const looksTurkish = (s) => /[çğıöşüÇĞİÖŞÜ]/.test(s || "") || /\b(ve|bir|bu|ile|için|olan|da|de)\b/i.test(s || "");
 
-  // ---------- watchlist & recents ----------
-  const getList = () => store.get("ni.list", []);
-  const inList = (id) => getList().some((x) => x.id === id);
-  function toggleList(item) {
-    let l = getList();
-    if (l.some((x) => x.id === item.id)) l = l.filter((x) => x.id !== item.id);
-    else l.unshift({ id: item.id, title: item.title, originalTitle: item.originalTitle, year: item.year, type: item.type, imdb: item.imdb, jwTomato: item.jwTomato, posterPath: item.posterPath || null });
-    store.set("ni.list", l.slice(0, 60));
+  // ---------- my lists (on this device) ----------
+  // Entry: { id, title, originalTitle, year, type, imdb, jwTomato, posterPath, status: "want"|"watched", addedAt, watchedAt?, myRating? }
+  const LIST_KEY = "ni.list";
+  let listCache = null;
+  function loadList() {
+    if (listCache) return listCache;
+    let l = store.get(LIST_KEY, []);
+    if (!Array.isArray(l)) l = [];
+    let changed = false;
+    const now = Date.now();
+    l = l.filter((x) => x && x.id).map((x, i) => {
+      const e = { ...x };
+      if (e.status !== "want" && e.status !== "watched") { e.status = "want"; changed = true; } // older lists → İzleyeceğim
+      if (!e.addedAt) { e.addedAt = now - i * 1000; changed = true; } // keep the old order
+      if ("poster" in e) { delete e.poster; changed = true; } // drop old embedded images
+      return e;
+    });
+    listCache = l;
+    if (changed) store.set(LIST_KEY, l);
+    return l;
   }
+  function saveList(l) { listCache = l; store.set(LIST_KEY, l.slice(0, 1000)); }
+  const entryOf = (id) => loadList().find((x) => x.id === id) || null;
+  const statusOf = (id) => entryOf(id)?.status || null;
+
+  function setStatus(item, status) {
+    const l = loadList().slice();
+    const i = l.findIndex((x) => x.id === item.id);
+    const prev = i > -1 ? { ...l[i] } : null;
+    if (i > -1) l.splice(i, 1);
+    if (status) {
+      const e = {
+        ...(prev || {}),
+        id: item.id, title: item.title, originalTitle: item.originalTitle, year: item.year, type: item.type,
+        imdb: item.imdb ?? prev?.imdb ?? null, jwTomato: item.jwTomato ?? prev?.jwTomato ?? null,
+        posterPath: item.posterPath ?? prev?.posterPath ?? null, status,
+      };
+      if (status === "watched") { e.watchedAt = prev?.status === "watched" && prev.watchedAt ? prev.watchedAt : Date.now(); e.addedAt = prev?.addedAt || Date.now(); }
+      else { e.addedAt = Date.now(); delete e.watchedAt; delete e.myRating; }
+      l.unshift(e);
+    }
+    saveList(l);
+    return prev;
+  }
+  function restoreEntry(id, prev) {
+    const l = loadList().filter((x) => x.id !== id);
+    if (prev) l.unshift(prev);
+    saveList(l);
+  }
+  function setRating(id, n) {
+    const l = loadList().slice();
+    const e = l.find((x) => x.id === id);
+    if (!e) return null;
+    e.myRating = e.myRating === n ? null : n;
+    saveList(l);
+    return e.myRating;
+  }
+
+  const fmtDay = (t) => {
+    try {
+      const d = new Date(t);
+      return d.toLocaleDateString("tr-TR", { day: "numeric", month: "short", ...(d.getFullYear() !== new Date().getFullYear() ? { year: "numeric" } : {}) });
+    } catch { return ""; }
+  };
+  const starsTxt = (n) => n ? "★".repeat(n) + "☆".repeat(5 - n) : "";
+
+  let toastTimer = null;
+  function toast(msg, undo) {
+    document.querySelector(".toast")?.remove();
+    clearTimeout(toastTimer);
+    const t = document.createElement("div");
+    t.className = "toast"; t.setAttribute("role", "status");
+    t.innerHTML = `<span>${esc(msg)}</span>`;
+    if (undo) {
+      const b = document.createElement("button");
+      b.textContent = "Geri al";
+      b.onclick = () => { undo(); t.remove(); };
+      t.append(b);
+    }
+    document.body.append(t);
+    toastTimer = setTimeout(() => t.remove(), 4500);
+  }
+
+  // ---------- recents ----------
   function addRecent(q) {
     const r = store.get("ni.recent", []).filter((x) => x.toLowerCase() !== q.toLowerCase());
     r.unshift(q);
@@ -292,12 +391,21 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
   }
 
   // ---------- views ----------
-  function rowHtml(r) {
+  function rowHtml(r, ctx) {
+    if (typeof ctx !== "string") ctx = ""; // also used directly as an Array.map callback
     const tc = tomatoClass(r.jwTomato);
-    const sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.originalTitle && r.originalTitle !== r.title ? r.originalTitle : null].filter(Boolean).join(" · ");
+    let sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.originalTitle && r.originalTitle !== r.title ? r.originalTitle : null].filter(Boolean).join(" · ");
+    let tag = "";
+    if (ctx === "watched") sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.watchedAt ? "İzlendi " + fmtDay(r.watchedAt) : null].filter(Boolean).join(" · ") + (r.myRating ? "  " + starsTxt(r.myRating) : "");
+    else if (ctx === "want") sub = [r.year, r.type === "dizi" ? "Dizi" : "Film", r.addedAt > 1e12 ? "Eklendi " + fmtDay(r.addedAt) : null].filter(Boolean).join(" · ");
+    else {
+      const st = statusOf(r.id);
+      if (st === "watched") { const e = entryOf(r.id); tag = `<span class="tag seen">İzledin${e?.myRating ? " · " + starsTxt(e.myRating) : ""}</span>`; }
+      else if (st === "want") tag = `<span class="tag want">İzleyeceğim</span>`;
+    }
     return `<button class="row" data-id="${esc(r.id)}">
       ${posterImg(r.posterPath, r.title)}
-      <span class="t"><b>${esc(r.title)}</b><span>${esc(sub)}</span></span>
+      <span class="t"><b>${esc(r.title)}</b><span>${esc(sub)}</span>${tag}</span>
       <span class="mini">
         <span class="badge b-imdb" title="IMDb puanı">IMDb ${fmtImdb(r.imdb)}</span>
         <span class="badge b-rt ${tc}" title="Rotten Tomatoes eleştirmen puanı">🍅 ${r.jwTomato == null ? "—" : r.jwTomato + "%"}</span>
@@ -313,19 +421,39 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
 
   function renderHome() {
     current = null;
-    const list = getList().filter((x) => filter === "all" || x.type === filter);
+    const tab = store.get("ni.tab", "want") === "watched" ? "watched" : "want";
+    const byType = (x) => filter === "all" || x.type === filter;
+    const all = loadList();
+    const want = all.filter((x) => x.status === "want" && byType(x)).sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+    const watched = all.filter((x) => x.status === "watched" && byType(x)).sort((a, b) => (b.watchedAt || 0) - (a.watchedAt || 0));
+    const items = tab === "want" ? want : watched;
     const recent = store.get("ni.recent", []);
     const picks = ["Kış Uykusu", "Dark", "Inception", "Severance", "Breaking Bad", "Masumlar Apartmanı"];
+    const rated = watched.filter((x) => x.myRating);
+    const avg = rated.length ? (rated.reduce((s, x) => s + x.myRating, 0) / rated.length).toLocaleString("tr-TR", { maximumFractionDigits: 1 }) : null;
+    const bar = tab === "want"
+      ? (want.length > 1 ? `<div class="listbar"><span class="note">En son eklenen üstte</span><button class="btn" id="random">Ne izlesem? Rastgele seç</button></div>` : "")
+      : (watched.length ? `<div class="listbar"><span class="note">${watched.length} yapım izledin${avg ? ` · puan ortalaman ${avg}/5` : ""}</span></div>` : "");
+    const empty = tab === "want"
+      ? `<div class="empty">İzlemek istediklerini burada topla. Bir yapımın sayfasında <b>İzleyeceğim</b>'e dokun.</div>`
+      : `<div class="empty">İzlediklerin burada tarihleriyle birikir. Bir yapımın sayfasında <b>İzledim</b>'e dokun, istersen puan ver.</div>`;
     view.innerHTML = `
       ${recent.length ? `<div class="label">Son aramalar <button id="clr-rec">Temizle</button></div><div class="quick" id="recent">${recent.map((r) => `<button class="chip" data-q="${esc(r)}">${esc(r)}</button>`).join("")}</div>` : ""}
-      <div class="label">Listem${list.length ? ` · ${list.length}` : ""}</div>
-      ${list.length ? `<div class="list" id="mylist">${list.map(rowHtml).join("")}</div>`
-        : `<div class="empty">Henüz listende bir şey yok. Bir yapımın sayfasında <b>Listeme ekle</b>'ye dokununca burada görünür.</div>`}
+      <div class="label">Listelerim</div>
+      <div class="tabs" role="tablist" aria-label="Listelerim">
+        <button class="tab" role="tab" data-tab="want" aria-selected="${tab === "want"}">İzleyeceğim<span>${want.length}</span></button>
+        <button class="tab" role="tab" data-tab="watched" aria-selected="${tab === "watched"}">İzledim<span>${watched.length}</span></button>
+      </div>
+      ${bar}
+      ${items.length ? `<div class="list" id="mylist" ${bar ? "" : 'style="margin-top:12px"'}>${items.map((x) => rowHtml(x, tab)).join("")}</div>` : `<div style="margin-top:12px">${empty}</div>`}
       <div class="label">Denemek için</div>
       <div class="quick" id="picks">${picks.map((p) => `<button class="chip" data-q="${esc(p)}">${esc(p)}</button>`).join("")}</div>`;
     view.querySelectorAll("[data-q]").forEach((b) => b.onclick = () => { qEl.value = b.dataset.q; toggleClear(); runSearch(b.dataset.q); });
+    view.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => { store.set("ni.tab", b.dataset.tab); renderHome(); });
+    const rnd = $("#random");
+    if (rnd) rnd.onclick = () => openDetail(want[Math.floor(Math.random() * want.length)]);
     const c = $("#clr-rec"); if (c) c.onclick = () => { store.set("ni.recent", []); renderHome(); };
-    const ml = $("#mylist"); if (ml) { bindRows(ml, list); loadImages(ml); }
+    const ml = $("#mylist"); if (ml) { bindRows(ml, items); loadImages(ml); }
   }
 
   function renderResults() {
@@ -446,7 +574,6 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
       </div></div>`).join("")
       : `<div class="empty">Şu anda Türkiye'deki hiçbir dijital platformda görünmüyor.</div>`;
 
-    const listed = inList(d.id);
     const dirs = d.directorList || (d.directors || []).map((n) => ({ name: n, id: null }));
     const personChip = (name, id, sub, role) => id
       ? `<button class="person" data-pid="${esc(id)}" data-pname="${esc(name)}" data-prole="${esc(role)}" aria-label="${esc(name)}: tüm yapımları"><b>${esc(name)}</b>${sub ? ` <span>· ${esc(sub)}</span>` : ""}</button>`
@@ -462,8 +589,12 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
           <div class="facts">${facts.map((f) => `<span class="fact">${esc(f)}</span>`).join("")}</div>
         </div>
       </div>
+      <div class="status" role="group" aria-label="Listelerim">
+        <button class="sbtn want" id="st-want" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-6-4.5L6 21z"/></svg>İzleyeceğim</button>
+        <button class="sbtn seen" id="st-seen" aria-pressed="false"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12.5 5 5L20 6.5"/></svg>İzledim</button>
+      </div>
+      <div class="myrate" id="myrate" hidden></div>
       <div class="actions">
-        <button class="btn primary" id="listbtn" aria-pressed="${listed}">${listed ? "✓ Listemde" : "+ Listeme ekle"}</button>
         <a class="btn" href="${esc(trailer)}" target="_blank" rel="noopener">▶ Fragman</a>
       </div>
 
@@ -510,12 +641,31 @@ button.person b { font-weight: 600; text-decoration: underline; text-decoration-
     const backHere = detailBack;
     view.querySelectorAll("[data-pid]").forEach((b) => b.onclick = () =>
       openPerson({ id: b.dataset.pid, name: b.dataset.pname, role: b.dataset.prole }, () => openDetail(d, backHere)));
-    $("#listbtn").onclick = (ev) => {
-      toggleList(d);
-      const on = inList(d.id);
-      ev.currentTarget.textContent = on ? "✓ Listemde" : "+ Listeme ekle";
-      ev.currentTarget.setAttribute("aria-pressed", on);
+    const paintStatus = () => {
+      const e = entryOf(d.id);
+      $("#st-want").setAttribute("aria-pressed", e?.status === "want");
+      $("#st-seen").setAttribute("aria-pressed", e?.status === "watched");
+      const box = $("#myrate");
+      box.hidden = e?.status !== "watched";
+      if (box.hidden) return;
+      box.innerHTML = `<span>Puanın</span><div class="stars" role="group" aria-label="Puanın">${[1, 2, 3, 4, 5].map((n) =>
+        `<button class="star ${e.myRating >= n ? "on" : ""}" data-star="${n}" aria-label="5 üzerinden ${n}" aria-pressed="${e.myRating === n}">★</button>`).join("")}</div>
+        <span>${esc(fmtDay(e.watchedAt))} tarihinde izledin</span>`;
+      box.querySelectorAll("[data-star]").forEach((b) => b.onclick = () => { setRating(d.id, +b.dataset.star); paintStatus(); });
     };
+    const flip = (status) => {
+      const before = statusOf(d.id);
+      const next = before === status ? null : status;
+      const prev = setStatus(d, next);
+      paintStatus();
+      const msg = !next ? (before === "watched" ? "İzlediklerinden çıkarıldı" : "İzleyeceklerinden çıkarıldı")
+        : next === "watched" ? (before === "want" ? "İzlediklerine taşındı" : "İzlediklerine eklendi")
+        : (before === "watched" ? "İzleyeceklerine taşındı" : "İzleyeceklerine eklendi");
+      toast(msg, () => { restoreEntry(d.id, prev); if (current === d.id) paintStatus(); });
+    };
+    $("#st-want").onclick = () => flip("want");
+    $("#st-seen").onclick = () => flip("watched");
+    paintStatus();
     if (needsTranslate) $("#sumsrc").textContent = `Kaynak: ${sumSrc} · Türkçe özeti yok, orijinal dilinde`;
   }
 
