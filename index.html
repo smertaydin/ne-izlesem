@@ -144,6 +144,12 @@ a { color: inherit; }
 .people { display: flex; flex-wrap: wrap; gap: 6px; }
 .person { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: .88rem; }
 .person span { color: var(--muted); }
+button.person { font: inherit; font-size: .88rem; color: inherit; text-align: left; cursor: pointer; }
+button.person:hover { border-color: var(--accent); }
+button.person b { font-weight: 600; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+.phead { display: grid; gap: 4px; margin-top: 4px; }
+.phead h2 { margin: 0; font: 800 2rem/1.02 var(--display); text-transform: uppercase; text-wrap: balance; overflow-wrap: anywhere; }
+.phead span { color: var(--muted); font-size: .9rem; }
 
 .similar { display: grid; gap: 6px; }
 .sim { text-align: left; width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
@@ -196,7 +202,9 @@ a { color: inherit; }
   let filter = "all";
   let lastResults = null;
   let lastQuery = "";
-  let current = null; // detail currently open
+  let current = null; // detail ("tm…"/"ts…") or person ("p:…") currently open
+  let detailBack = null; // where "Geri" goes from the open detail
+  let personView = null; // { p, items, total, onBack } for the open person list
   const cache = new Map();
 
   // ---------- data access (direct, with the personal invite key from the link) ----------
@@ -297,9 +305,9 @@ a { color: inherit; }
     </button>`;
   }
 
-  function bindRows(root, items) {
+  function bindRows(root, items, onBack = goBack) {
     root.querySelectorAll(".row").forEach((b) => {
-      b.onclick = () => openDetail(items.find((x) => x.id === b.dataset.id));
+      b.onclick = () => openDetail(items.find((x) => x.id === b.dataset.id), onBack);
     });
   }
 
@@ -335,6 +343,7 @@ a { color: inherit; }
     if (!q) { lastResults = null; renderHome(); return; }
     const seq = ++searchSeq;
     current = null;
+    personView = null;
     view.innerHTML = `<div class="label">Aranıyor…</div><div class="list">${'<div class="skel"></div>'.repeat(4)}</div>`;
     try {
       const d = await api({ action: "search", q });
@@ -352,15 +361,16 @@ a { color: inherit; }
   // ---------- detail ----------
   const GROUPS = [["FLATRATE", "Abonelikle izle"], ["FREE", "Ücretsiz"], ["ADS", "Reklamlı ücretsiz"], ["RENT", "Kirala"], ["BUY", "Satın al"]];
 
-  async function openDetail(item) {
+  async function openDetail(item, onBack = goBack) {
     if (!item) return;
     current = item.id;
+    detailBack = onBack;
     window.scrollTo({ top: 0 });
     view.innerHTML = `<button class="back" id="back">← Geri</button>
       <div class="hero">${posterImg(item.posterPath, item.title)}<div class="meta"><h2>${esc(item.title)}</h2><div class="orig">${esc(item.year || "")}</div></div></div>
       <div class="scores">${'<div class="skel" style="height:110px"></div>'.repeat(3)}</div>
       <div class="section"><h3>Türkiye'de nerede?</h3><div class="skel"></div></div>`;
-    $("#back").onclick = goBack;
+    $("#back").onclick = onBack;
     loadImages(view);
     try {
       const d = await api({ action: "details", id: item.id });
@@ -370,11 +380,47 @@ a { color: inherit; }
       if (current !== item.id) return;
       const s = view.querySelector(".scores"); s.remove();
       const sec = view.querySelector(".section"); sec.innerHTML = "";
-      sec.append(errorBox(e, () => openDetail(item)));
+      sec.append(errorBox(e, () => openDetail(item, onBack)));
     }
   }
 
-  function goBack() { lastResults ? renderResults() : renderHome(); current = null; window.scrollTo({ top: 0 }); }
+  function goBack() { personView = null; lastResults ? renderResults() : renderHome(); current = null; window.scrollTo({ top: 0 }); }
+
+  // ---------- person (actor / director) ----------
+  async function openPerson(p, onBack) {
+    current = "p:" + p.id;
+    personView = null;
+    window.scrollTo({ top: 0 });
+    view.innerHTML = `<button class="back" id="back">← Geri</button>
+      <div class="phead"><h2>${esc(p.name)}</h2><span>${esc(p.role)} · yapımlar yükleniyor…</span></div>
+      <div class="list" style="margin-top:16px">${'<div class="skel"></div>'.repeat(5)}</div>`;
+    $("#back").onclick = onBack;
+    try {
+      const d = await api({ action: "person", id: String(p.id) });
+      if (current !== "p:" + p.id) return;
+      personView = { p, items: d.results || [], total: d.total ?? (d.results || []).length, onBack };
+      renderPerson();
+    } catch (e) {
+      if (current !== "p:" + p.id) return;
+      const list = view.querySelector(".list"); list.innerHTML = "";
+      list.append(errorBox(e, () => openPerson(p, onBack)));
+    }
+  }
+
+  function renderPerson() {
+    if (!personView) return;
+    const { p, items: all, total, onBack } = personView;
+    current = "p:" + p.id;
+    const items = all.filter((x) => filter === "all" || x.type === filter);
+    const countTxt = total > all.length ? `Türkiye'de ${total} yapım · en popüler ${all.length} tanesi` : `Türkiye'de ${all.length} yapım`;
+    view.innerHTML = `<button class="back" id="back">← Geri</button>
+      <div class="phead"><h2>${esc(p.name)}</h2><span>${esc(p.role)} · ${esc(countTxt)}</span></div>
+      <div class="label">${filter === "all" ? "Popülerliğe göre" : filter === "film" ? "Filmler" : "Diziler"}${items.length !== all.length ? ` · ${items.length}` : ""}</div>` +
+      (items.length ? `<div class="list" id="pres">${items.map(rowHtml).join("")}</div>`
+        : `<div class="empty">${all.length ? `Bu kişinin Türkiye'de listelenen ${filter === "film" ? "filmi" : "dizisi"} yok.` : "Bu kişinin Türkiye'de listelenen bir yapımı yok."}</div>`);
+    $("#back").onclick = onBack;
+    const r = $("#pres"); if (r) { bindRows(r, items, () => { renderPerson(); window.scrollTo({ top: 0 }); }); loadImages(r); }
+  }
 
   function renderDetail(d) {
     const rt = d.rt && d.rt.found && !d.rt.error ? d.rt : null;
@@ -401,6 +447,10 @@ a { color: inherit; }
       : `<div class="empty">Şu anda Türkiye'deki hiçbir dijital platformda görünmüyor.</div>`;
 
     const listed = inList(d.id);
+    const dirs = d.directorList || (d.directors || []).map((n) => ({ name: n, id: null }));
+    const personChip = (name, id, sub, role) => id
+      ? `<button class="person" data-pid="${esc(id)}" data-pname="${esc(name)}" data-prole="${esc(role)}" aria-label="${esc(name)}: tüm yapımları"><b>${esc(name)}</b>${sub ? ` <span>· ${esc(sub)}</span>` : ""}</button>`
+      : `<span class="person">${esc(name)}${sub ? ` <span>· ${esc(sub)}</span>` : ""}</span>`;
     view.innerHTML = `
       <button class="back" id="back">← Geri</button>
       <div class="hero">
@@ -443,9 +493,9 @@ a { color: inherit; }
 
       <div class="section"><h3>Türkiye'de nerede izlenir?</h3><div class="prov">${provHtml}</div></div>
 
-      ${d.directors?.length || d.cast?.length ? `<div class="section"><h3>Kadro</h3><div class="people">
-        ${(d.directors || []).map((n) => `<span class="person">${esc(n)} <span>· Yönetmen</span></span>`).join("")}
-        ${(d.cast || []).slice(0, 8).map((c) => `<span class="person">${esc(c.name)}${c.as ? ` <span>· ${esc(c.as)}</span>` : ""}</span>`).join("")}
+      ${dirs.length || d.cast?.length ? `<div class="section"><h3>Kadro · tüm yapımları için dokun</h3><div class="people">
+        ${dirs.map((x) => personChip(x.name, x.id, "Yönetmen", "Yönetmen")).join("")}
+        ${(d.cast || []).slice(0, 8).map((c) => personChip(c.name, c.id, c.as, "Oyuncu")).join("")}
       </div></div>` : ""}
 
 
@@ -455,8 +505,11 @@ a { color: inherit; }
         ${d.jwUrl ? `<a class="btn" href="${esc(d.jwUrl)}" target="_blank" rel="noopener">JustWatch</a>` : ""}
       </div></div>`;
 
-    $("#back").onclick = goBack;
+    $("#back").onclick = detailBack;
     loadImages(view);
+    const backHere = detailBack;
+    view.querySelectorAll("[data-pid]").forEach((b) => b.onclick = () =>
+      openPerson({ id: b.dataset.pid, name: b.dataset.pname, role: b.dataset.prole }, () => openDetail(d, backHere)));
     $("#listbtn").onclick = (ev) => {
       toggleList(d);
       const on = inList(d.id);
@@ -482,6 +535,7 @@ a { color: inherit; }
   document.querySelectorAll(".chip[data-f]").forEach((c) => c.onclick = () => {
     filter = c.dataset.f;
     document.querySelectorAll(".chip[data-f]").forEach((x) => x.setAttribute("aria-pressed", x === c));
+    if (personView && current === "p:" + personView.p.id) { renderPerson(); return; }
     if (current) return;
     lastResults ? renderResults() : renderHome();
   });
